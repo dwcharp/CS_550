@@ -1,8 +1,10 @@
 import Pyro4
 import threading
-class Server(object):
+Pyro4.config.COMMTIMEOUT=60
+class Server(threading.Thread):
 
     def __init__(self):
+        threading.Thread.__init__(self)
         self.next_usable_id = 0
         self.peers = []
         self.peer_file_index = dict()
@@ -37,15 +39,11 @@ class Server(object):
         daemon.requestLoop()
 
     def run(self):
-        thread = threading.Thread(target=self.start_system)
-        thread.setDaemon(True)
-        thread.start()
-
+        self.start_system()
 
 def main():
-    s = Server()
-    s.run()
-    while True:
-        pass
+    server =Server()
+    server.start()
+
 if __name__=="__main__":
     main()
