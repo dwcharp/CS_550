@@ -1,5 +1,5 @@
 import Pyro4
-
+import threading
 class Server(object):
 
     def __init__(self):
@@ -27,12 +27,25 @@ class Server(object):
         self.next_usable_id  = self.next_usable_id + 1
         return self.next_usable_id
 
+    def start_system(self):
+        print "Starting Server"
+        daemon = Pyro4.Daemon()
+        server_uri = daemon.register(self)
+        print "Server URI is : " + str(server_uri)
+        ns = Pyro4.locateNS()
+        ns.register("Main_Server",server_uri)
+        daemon.requestLoop()
+
+    def run(self):
+        thread = threading.Thread(target=self.start_system)
+        thread.setDaemon(True)
+        thread.start()
+
+
 def main():
-    server = Server()
-    Pyro4.Daemon.serveSimple(
-        {
-            server: "file.server"
-        },
-        ns = True)
+    s = Server()
+    s.run()
+    while True:
+        pass
 if __name__=="__main__":
     main()
