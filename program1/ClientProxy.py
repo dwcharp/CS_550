@@ -1,4 +1,4 @@
-rom  Server import *
+from  Server import *
 from MetaData import *
 import Pyro4
 import threading

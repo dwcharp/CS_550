@@ -4,7 +4,7 @@ import threading
 class FileServerHandler(SocketServer.StreamRequestHandler):
     def handle(self):
         self.data = self.rfile.readline().strip()
-        print self.data
+        print self.data + " from server !!!!"
         #self.request.sendall(self.data)
 
 
@@ -15,15 +15,19 @@ class ThreadFileServer(SocketServer.ThreadingMixIn,SocketServer.TCPServer):
 class FileServer():
     def __init__(self,client):
         self.client = client
+        self.server = None
 
     def start_server(self):
         HOST, PORT = "localhost",0
 
-        server = ThreadFileServer((HOST,PORT),FileServerHandler)
-        server_thread = threading.Thread(target=server.serve_forever)
+        self.server = ThreadFileServer((HOST,PORT),FileServerHandler)
+        server_thread = threading.Thread(target=self.server.serve_forever)
         server_thread.daemon = True
         server_thread.start()
-        return server.server_address
+        return self.server.server_address
+
+    def stop_server(self):
+        self.server.shutdown()
 
 def main():
     HOST, PORT = "localhost",9999

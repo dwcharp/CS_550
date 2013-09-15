@@ -3,24 +3,22 @@ from MetaData import *
 import random
 import string
 import socket
+import time
+import Pyro4
 
 num_clients = 10
 clients = []
 max_file_size = 3000 #in chars
-max_num_files = 50
+max_num_files = 5
 file_names = []
 
 def main():
     create_random_file_names()
-    createClients(1)
+    createClients(2)
+    time.sleep(2)
+    test_get_file()
+    time.sleep(2)
     stop_clients()
-    ''' HOST, PORT = "localhost",9999
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        sock.connect((HOST,PORT))
-        sock.sendall("filename\n")
-    finally:
-        sock.close()'''
 
 def createClients(num_of_clients):
 
@@ -32,6 +30,22 @@ def createClients(num_of_clients):
         clients.append(client)
 
 #create random files for each client
+
+def test_get_file():
+    c1 = get_client("1")
+    c2 = get_client("2")
+    print str(c1.get_id()) + "!!!!!!"
+    name = c2.get_file_name()
+    print "Testing with file " + name
+    time.sleep(2)
+    c1._pyroOneway.add("obtain")
+    c1.obtain(name)
+
+def get_client(id):
+    ns  = Pyro4.locateNS()
+    uri = ns.lookup(id)
+    print uri
+    return Pyro4.Proxy(uri)
 
 def stop_clients():
     for client in clients:

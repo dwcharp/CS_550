@@ -1,21 +1,25 @@
 import Pyro4
 import sys
+from MetaData import *
+Pyro4.config.SERIALIZER = 'pickle'
+Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
+
 class Server():
 
     def __init__(self):
         self.next_usable_id = 0
-        self.peers = []
+        self.peers = dict()
         self.peer_file_index = dict()
         self.server_daemon = None
 
-    def registry(self,peer_id, file_list):
-        self.peers.append(peer_id)
+    def registry(self,peer_id, ip,port, file_list):
+        self.peers[peer_id] = (ip,port)
 
-        for file_name in file_list:
-            if self.peer_file_index.has_key(file_name):
-                self.peer_file_index[file_name].append(peer_id)
+        for f in file_list:
+            if self.peer_file_index.has_key(f.name):
+                self.peer_file_index[f.name].append(peer_id)
             else:
-                self.peer_file_index[file_name] = [peer_id]
+                self.peer_file_index[f.name] = [peer_id]
             print self.peer_file_index
 
     def search(self,file_name):
@@ -41,8 +45,10 @@ class Server():
         ns.register("Main_Server",server_uri)
         self.server_daemon.requestLoop()
 
+    def get_num_clients(self):
+        return self.next_usable_id
 
-    def stop_server(self):
+    def stop_server(self):  s
         print "Stoppping server"
         self.server_daemon.shutdown()
 
