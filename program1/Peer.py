@@ -12,11 +12,12 @@ Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
 class Client():
 
     def __init__(self):
+        self.name_server= Pyro4.locateNS()
         self.server = None
+        self.id_num = None
+        self.register_to_indexing_server()
         self.file_server = FileServer.FileServer(self)
         self.ip , self.port = self.file_server.start_server()
-        self.name_server=None
-        self.id_num = 0
         self.client_daemon = None
         self.meta_data = None
         self.download_queue = Queue.Queue()
@@ -39,12 +40,19 @@ class Client():
     def download_file(self):
         peer_ip,peer_port, file_name = self.download_queue.get()
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        file  = open(self.get_working_dir() + file_name + ".txt","wb+")
         try:
             print "Connecting to fileserver!!!!\n"
             sock.connect((peer_ip,peer_port))
             sock.sendall(file_name + "\n")
+            while 1:
+                file_data = sock.recv(1024)
+                if not file_data:
+                    break
+                file.write(file_data)
 
         finally:
+            file.close()
             sock.close()
 
     def get_addr(self):
@@ -63,21 +71,27 @@ class Client():
     def get_file_name(self):
         return self.meta_data.files[0].name
 
-    def register_with_server(self):
-        self.name_server = Pyro4.locateNS()
+    def get_working_dir(self):
+        return self.meta_data.working_directory
+
+    def register_with_servers(self):
+        self.client_daemon = Pyro4.Daemon()
+        self.server.registry(self.id_num,self.ip,self.port
+            ,self.meta_data.files)
+        self.register_to_naming_server()
+        self.client_daemon.requestLoop()
+
+    def register_to_naming_server(self):
+        client_uri = self.client_daemon.register(self)
+        self.name_server.register(str(self.id_num),client_uri)
+
+    def register_to_indexing_server(self):
         server_uri = self.name_server.lookup("Main_Server")
         self.server = Pyro4.Proxy(server_uri)
         self.id_num =self.server.generate_peer_id()
-        self.server.registry(self.id_num,self.ip,self.port,
-         self.meta_data.files)
-        self.client_daemon = Pyro4.Daemon()
-        client_uri = self.client_daemon.register(self)
-        print "Client URI is of: " + str(self.id_num) + str(client_uri)
-        self.name_server.register(str(self.id_num),client_uri)
-        self.client_daemon.requestLoop()
 
     def start_client(self):
-        daemon_thread = threading.Thread(target=self.register_with_server)
+        daemon_thread = threading.Thread(target=self.register_with_servers)
         daemon_thread.start()
         print "returning from start"
 

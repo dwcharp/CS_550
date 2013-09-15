@@ -5,7 +5,9 @@ class FileServerHandler(SocketServer.StreamRequestHandler):
     def handle(self):
         self.data = self.rfile.readline().strip()
         print self.data + " from server !!!!"
-        #self.request.sendall(self.data)
+        file  = open(directory + file_name + ".txt","wb+")
+        self.request.sendall(file.read())
+        file.close()
 
 
 

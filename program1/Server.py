@@ -48,7 +48,7 @@ class Server():
     def get_num_clients(self):
         return self.next_usable_id
 
-    def stop_server(self):  s
+    def stop_server(self):
         print "Stoppping server"
         self.server_daemon.shutdown()
 

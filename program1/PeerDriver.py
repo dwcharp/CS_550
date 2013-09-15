@@ -5,6 +5,7 @@ import string
 import socket
 import time
 import Pyro4
+import os
 
 num_clients = 10
 clients = []
@@ -14,10 +15,10 @@ file_names = []
 
 def main():
     create_random_file_names()
-    createClients(2)
+    createClients(40)
     time.sleep(2)
-    test_get_file()
-    time.sleep(2)
+    #test_get_file()
+    #time.sleep(2)
     stop_clients()
 
 def createClients(num_of_clients):
@@ -61,7 +62,8 @@ def create_file_contents(size):
 
 def create_files(client_id):
     client_files = []
-    directory = "test_files/"
+    directory = "test_files/peer" + str(client_id) + "/"
+    os.makedirs(directory)
     num_files_names = len(file_names) -1
     for i in range(1, max_num_files +1):
         random_size = random.randint(1,max_file_size)
