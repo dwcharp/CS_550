@@ -1,14 +1,18 @@
 import SocketServer
 import threading
 
+#### Open the file and send it to the client, the file is known to exist
 class FileServerHandler(SocketServer.StreamRequestHandler):
     def handle(self):
         self.data = self.rfile.readline().strip()
-        print self.data + " from server !!!!"
-        file  = open(directory + file_name + ".txt","wb+")
-        self.request.sendall(file.read())
-        file.close()
-
+        print self.data + "\nfrom server !!!!"
+        file_name = self.data
+        try:
+            file  = open("test_files/" + file_name + ".txt","r")
+            self.data = file.read()
+            self.request.sendall(self.data)
+        finally:
+            file.close()
 
 
 class ThreadFileServer(SocketServer.ThreadingMixIn,SocketServer.TCPServer):
@@ -21,7 +25,6 @@ class FileServer():
 
     def start_server(self):
         HOST, PORT = "localhost",0
-
         self.server = ThreadFileServer((HOST,PORT),FileServerHandler)
         server_thread = threading.Thread(target=self.server.serve_forever)
         server_thread.daemon = True
