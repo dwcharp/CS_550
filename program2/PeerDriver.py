@@ -110,8 +110,6 @@ def create_file_contents(size):
 def create_files(client_id):
     client_files = []
     directory = "test_files/"
-    '''directory = "test_files/peer" + str(client_id) + "/"
-    os.makedirs(directory)'''
     num_files_names = len(file_names) -1
     for i in range(1, max_num_files +1):
         random_size = random.randint(1,max_file_size)
