@@ -1,4 +1,6 @@
 from MetaData import *
+from QueryHelper import *
+from DownloadHelper import *
 import Pyro4
 import threading
 import socket
@@ -8,103 +10,76 @@ import time
 
 Pyro4.config.SERIALIZER = 'pickle'
 Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
-
+TTL = 10
 class Client():
 
-    def __init__(self):
-        self.id_num = None
-        self.meta_data = MetaData("this",[])
+    def __init__(self,id_num):
+        self.id_num = id_num
+        self.meta_data = None
         self.download_folder = None
-        self.create_downloads_folder()
         self.peers = dict()
+
         self.messages_received = dict()
         self.messages_sent = dict()
+        #message id = id_num + next_message_id
+        self.next_message_id = 0
+
         self.download_queue = Queue.Queue()
+
         #self.name_server= Pyro4.locateNS()
         self.file_server = None
-        self.ip_address = None
+        self.ip_address = 9000 + int(id_num)
         self.client_daemon = None
+        self.query_helper = QueryHelper(self)
+        self.download_helper = DownloadHelper(self)
+    #### This is called from other peers, and calls this on neigbhors
 
-#### This is called from other peers, and calls this on neigbhors
+    #### This is called to generate a new query for this client
+    def generate_query(self,file_name):
+        mId = str(self.id_num) + str(self.next_message_id)
+        self.next_message_id = self.next_message_id + 1
+        self.query(mId,TTL,file_name,self.ip_address)
+
 
     def query(self,messageId,TTL,file_name,sender_info):
-        if self.messages_received.has_key(messageId) or self.messages_sent.has_key(messageId):
-            print "Not sending query from " + str(self.ip_address)
-            return
-        else:
-            if self.ip_address == sender_info:
-                self.messages_sent[messageId] = True
-            else:
-                self.messages_received[messageId] = sender_info
-        if TTL > 0:
-            TTL = TTL -1
-            for peer in self.peers.values():
-                peer.query(messageId,TTL,file_name,self.ip_address)
+        self.query_helper.query(messageId,TTL,file_name,sender_info)
 
-        if self.meta_data.has_file(file_name):
-            self.send_hit_query(messageId,TTL,file_name,self.ip_address)
-##### If peer as the file, send a hit query
+    ##### If peer as the file, send a hit query
 
     def send_hit_query(self,messageId,TTL,file_name,sender_info):
-        print "Sending a Hit for: " + file_name + " from client: " + str(self.ip_address) + " orgin: " + str(sender_info)
-        peer_info = self.messages_received[messageId]
-        peer = self.peers[peer_info]
-        peer.hit_query(messageId,TTL,file_name,sender_info)
+        self.query_helper.send_hit_query(messageId,TTL,file_name,sender_info)
 
     #### called from peer that is relaying a query message back
     def hit_query(self,messageId,TTL,file_name,sender_info):
-        if self.messages_sent.has_key(messageId):
-            print str(sender_info) + " has the file from client" + str(self.ip_address)
-            #### download file
-        else:
-            self.send_hit_query(messageId,TTL,file_name,sender_info)
-            pass
+        self.query_helper.hit_query(messageId,TTL,file_name,sender_info)
 
 
-#### This intiates the download process, exits if files is not on index
+    #### This intiates the download process, exits if files is not on index
     def obtain(self,file_name):
-        print "peer: " + str(peer_with_file_id)
-        if len(peer_with_file_id ) > 0:
+        self.generate_query(file_name)
+        '''if len(peer_with_file_id ) > 0:
             peer_uri = self.name_server.lookup(str(peer_with_file_id[0]))
             peer = Pyro4.Proxy(peer_uri)
             self.get_file(file_name,peer)
         else:
-            print file_name + " is not on Index"
+            print file_name + " is not on Index"'''
 
-#### Ask the peer for its ip information and put the job in the Queue
+
+    #### Ask the peer for its ip information and put the job in the Queue
     def get_file(self,file_name,peer):
-        peer_ip,peer_port = peer.get_addr()
-        self.download_queue.put((peer_ip,peer_port,file_name))
+        self.download_queue.put((peer,file_name))
         getter = threading.Thread(target= self.download_file)
         getter.start()
         print "Starting download thread"
 
-##### This is called in a seperate Thread, pulla job from the queue and
-#####download into the test_files folder, let the index know u have it
-    def download_file(self):
-        peer_ip,peer_port, file_name = self.download_queue.get()
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        file  = open(self.download_folder + file_name + ".txt","wb+")
-        try:
-            print "\nConnecting to fileserver!!!!\n"
-            sock.connect((peer_ip,peer_port))
-            sock.sendall(file_name + "\n")
-            while 1:
-                file_data = sock.recv(1024)
-                if not file_data:
-                    print "\nData was empty"
-                    break
-                else:
-                    print file_data
-                    file.write(file_data)
-            self.server.add_file_to_index(self.id_num,file_name)
-            self.meta_data.add_file(file_name)
 
-        finally:
-            file.close()
-            sock.close()
+    ##### This is called in a seperate Thread, pulla job from the queue and
+    #####download into the test_files folder, let the index know u have it
+    def download_file(self):
+        self.download_helper.download_file()
 
     def add_peer(self,peer_id,peer):
+        #print "\nFrom client : " + str(self.id_num) + " adding peer : " + peer.id_num
         self.peers[peer_id] = peer
 
     def get_addr(self):
@@ -121,27 +96,7 @@ class Client():
         self.meta_data.add_file(file_name)
 
     def list_files_on_index(self):
-        pass
-
-
-    ###### Helper functions ######
-
-    #### This is started in a seperate thread ####
-    def register_with_servers(self):
-        self.client_daemon = Pyro4.Daemon()
-        self.start_file_server()
-        self.register_to_naming_server()
-        self.client_daemon.requestLoop()
-
-    def register_to_naming_server(self):
-        client_uri = self.client_daemon.register(self)
-        ip,port = self.ip_address
-        self.name_server.register(str(ip) + str(port),client_uri)
-
-
-    def start_file_server(self):
-        self.file_server = FileServer.FileServer(self)
-        self.ip_address = self.file_server.start_server()
+        print "Client: " + str(self.id_num) + " : " +  str(self.meta_data.list_files())
 
     def start_client(self):
         daemon_thread = threading.Thread(target=self.register_with_servers)
@@ -153,13 +108,6 @@ class Client():
         self.client_daemon.shutdown()
         print "Stopping client: " + str(self.id_num)
 
-def create_downloads_folder(self):
-        cwd = os.getcwd()
-        self.download_folder = download_folder = cwd + "/" + "downloads"
-        if  not os.path.exists(download_folder):
-            os.mkdir(download_folder)
-        else:
-            print "Folder exist"
 def main():
     c1 = Client()
     c2 = Client()

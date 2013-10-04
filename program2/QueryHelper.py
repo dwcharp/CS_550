@@ -10,7 +10,7 @@ class QueryHelper():
             return
         else:
             if self.client.ip_address == sender_info:
-                self.client.messages_sent[messageId] = True
+                self.client.messages_sent[messageId] = [file_name]
             else:
                 self.client.messages_received[messageId] = sender_info
         if TTL > 0:
@@ -18,7 +18,7 @@ class QueryHelper():
             for peer in self.client.peers.values():
                 peer.query(messageId,TTL,file_name,self.client.ip_address)
 
-        if self.client.meta_data.has_file(file_name):
+        if self.client.meta_data.has_file(file_name) and not self.client.messages_sent.has_key(messageId):
             self.client.send_hit_query(messageId,TTL,file_name,self.client.ip_address)
 ##### If peer as the file, send a hit query
 
@@ -31,8 +31,9 @@ class QueryHelper():
     #### called from peer that is relaying a query message back
     def hit_query(self,messageId,TTL,file_name,sender_info):
         if self.client.messages_sent.has_key(messageId):
-            print str(sender_info) + " has the file from client" + str(self.client.ip_address)
-            #### download file
+            print str(sender_info) + " has the file from client " + str(self.client.ip_address)
+            self.client.messages_sent[messageId].append(sender_info)
+            print self.client.messages_sent[messageId]
         else:
             self.client.send_hit_query(messageId,TTL,file_name,sender_info)
             pass

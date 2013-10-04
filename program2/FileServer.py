@@ -24,8 +24,8 @@ class FileServer():
         self.client = client
         self.server = None
 
-    def start_server(self,port_num):
-        HOST, PORT = "localhost",port_num
+    def start_server(self):
+        HOST, PORT = "localhost",self.client.ip_address
         self.server = ThreadFileServer((HOST,PORT),FileServerHandler)
         server_thread = threading.Thread(target=self.server.serve_forever)
         server_thread.daemon = True

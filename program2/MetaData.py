@@ -20,6 +20,13 @@ class MetaData():
                 print "Found File in Index"
                 return True
 
+    def list_files(self):
+        f_names= []
+        for file in self.files:
+            f_names.append(file.name)
+        f_names.sort()
+        return f_names
+
 class FileInfo():
     def __init__(self,name,size):
         self.size = size
