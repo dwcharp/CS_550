@@ -1,0 +1,15 @@
+file33,664
+file23,315
+file30,1190
+file39,567
+file40,4
+file26,1970
+file9,482
+file16,197
+file18,1557
+file13,975
+file19,393
+file34,1134
+file7,852
+file28,1076
+file1,415

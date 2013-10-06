@@ -9,7 +9,7 @@ class DownloadHelper:
     def download_file(self):
         peer_port, file_name = self.client.download_queue.get()
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        f  = open(self.client.download_folder + file_name,"wb+")
+        f  = open(self.client.download_folder + file_name + ".txt","wb+")
         try:
             print "\nConnecting to fileserver!!!!\n"
             sock.connect(("localhost",peer_port))
@@ -25,5 +25,5 @@ class DownloadHelper:
             self.client.meta_data.add_file(file_name)
 
         finally:
-            f.close()
+            file.close()
             sock.close()
