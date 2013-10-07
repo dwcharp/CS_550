@@ -9,6 +9,9 @@ import os
 
 Pyro4.config.SERIALIZER = 'pickle'
 Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
+STAR = "star_topolgy.txt"
+MESH = "mesh.txt"
+TOPOLGY = MESH
 
 #### This the driver class that helps run a client.
 
@@ -22,7 +25,7 @@ file_names = []
 def main():
     #create_random_file_names()
     #create_meta_data_files()
-    createSingleClient("star_topolgy.txt")
+    createSingleClient(TOPOLGY)
     user_input()
 
 ####command prompt to allow a user to run a client
@@ -30,7 +33,7 @@ def user_input():
     got_peers = False
     while True:
         print "1) List Files on this Server\n2) List Searches\n3) Search\n4) Download File\n5)Find Peers(Do this first!!)\n6) Shutdown Client\n"
-        selection = raw_input("Enter your input: ")
+        selection = raw_input("Enter your input: \n")
 
         if got_peers == False and not (selection =="5" or selection =="6") :
             print "Get your Peers first\n"
@@ -54,7 +57,9 @@ def user_input():
             print "Which File: "
             f= raw_input("Enter your input:\n")
             pn = raw_input("From which Peer(port number):\n")
-            get_file(f,int(pn))
+
+            if not get_file(f,int(pn)):
+                print " \nThe file name or port is not valid!!!!!!\n"
 
         elif selection == "5" :
             clients[0].get_peer_proxys()
@@ -94,7 +99,6 @@ def createSingleClient(file_name):
     info = filz.readline()
     info = info.strip("\n")
     info = info.split(",")
-    print info
     cID = info[0]
     del info[0]
     filz.close()
@@ -102,7 +106,7 @@ def createSingleClient(file_name):
     client = Client(cID)
     client.set_meta_data(create_files(cID))
     client.start_client()
-    print info
+    #print info
     for neigbhor in info:
         client.add_peer(int(neigbhor))
     clients.append(client)

@@ -22,6 +22,7 @@ class Client():
 
         self.messages_received = dict()
         self.messages_sent = dict()
+        self.files_to_download = dict()
         #message id = id_num + next_message_id
         self.next_message_id = 0
 
@@ -56,17 +57,21 @@ class Client():
         self.query_helper.hit_query(messageId,TTL,file_name,sender_info)
 
 
-    #### This intiates the download process, exits if files is not on index
+    #### This intiates the Search
     def obtain(self,file_name):
         self.generate_query(file_name)
 
 
     #### put the job in the Queue
     def get_file(self,file_name,peer_port):
-        self.download_queue.put((peer_port,file_name))
-        getter = threading.Thread(target= self.download_file)
-        getter.start()
-        print "Starting download thread"
+        if self.files_to_download.has_key(file_name) and peer_port in self.files_to_download[file_name]:
+            self.download_queue.put((peer_port,file_name))
+            getter = threading.Thread(target= self.download_file)
+            getter.start()
+            print "Starting download thread"
+            return True
+        else:
+            return False
 
 
     ##### This is called in a seperate Thread, pulla job from the queue and
@@ -77,7 +82,7 @@ class Client():
     #### Intially the peer id are taken in and the first
     #### the peer is contacted the proxy will be generated and stored
     def add_peer(self,peer_id):
-        print "\nFrom client : " + str(self.id_num) + " adding peer : " + str(peer_id)
+        #print "\nFrom client : " + str(self.id_num) + " adding peer : " + str(peer_id)
         peer_port = 9000 + int(peer_id)
         self.peers[peer_port] = None
 
@@ -116,26 +121,6 @@ class Client():
         self.client_daemon.shutdown()
         print "Stopping client: " + str(self.id_num)
 
-def main():
-    c1 = Client()
-    c2 = Client()
-    c3 = Client()
-    c1.ip_address = "1"
-    c2.ip_address = "2"
-    c3.ip_address = "3"
-    c1.add_file("Book of Murphy")
-    c2.add_file("Book of Tina")
-    c3.add_file("Book of Fey")
-    c1.add_peer("2",c2)
-    c2.add_peer("3",c3)
-    c2.add_peer("1",c1)
-    c3.add_peer("2",c2)
-    c1.query("1",10,"Book of Fey","1")
-    c3.query("2",10,"Book of Tina","3")
-    c3.query("5",10,"Book of Murphy","3")
-    c2.query("9",10,"Book of Murphy","2")
 
-if __name__=="__main__":
-    main()
 
 

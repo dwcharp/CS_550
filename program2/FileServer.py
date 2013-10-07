@@ -6,7 +6,7 @@ class FileServerHandler(SocketServer.StreamRequestHandler):
     def handle(self):
         test_folder = "test_files/"
         self.data = self.rfile.readline().strip()
-        print self.data + "\nfrom server !!!!"
+        #print self.data + "\nfrom server !!!!"
         file_name = self.data
         try:
             f  = open(test_folder + file_name,"r")

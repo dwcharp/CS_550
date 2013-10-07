@@ -36,6 +36,10 @@ class QueryHelper():
         if self.client.messages_sent.has_key(messageId):
             #print str(sender_info) + " has the file from client " + str(self.client.ip_address)
             self.client.messages_sent[messageId].append(sender_info)
+            if(self.client.files_to_download.has_key(file_name)):
+                self.client.files_to_download[file_name].append(sender_info)
+            else:
+                self.client.files_to_download[file_name] = [sender_info]
             #print self.client.messages_sent[messageId]
         else:
             self.client.send_hit_query(messageId,TTL,file_name,sender_info)

@@ -11,16 +11,16 @@ class DownloadHelper:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         f  = open(self.client.download_folder + file_name,"wb+")
         try:
-            print "\nConnecting to fileserver!!!!\n"
+            #print "\nConnecting to fileserver!!!!\n"
             sock.connect(("localhost",peer_port))
             sock.sendall(file_name + "\n")
             while 1:
                 file_data = sock.recv(1024)
                 if not file_data:
-                    print "\nData was empty"
+                    #print "\nData was empty"
                     break
                 else:
-                    print file_data
+                    #print file_data
                     f.write(file_data)
             self.client.meta_data.add_file(file_name)
 
